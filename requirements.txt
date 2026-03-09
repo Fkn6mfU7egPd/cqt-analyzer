@@ -3,3 +3,4 @@ psutil
 soundfile
 librosa
 fastapi
+uvicorn
