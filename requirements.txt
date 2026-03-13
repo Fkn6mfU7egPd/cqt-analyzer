@@ -4,3 +4,4 @@ soundfile
 librosa
 fastapi
 uvicorn
+python-multipart
