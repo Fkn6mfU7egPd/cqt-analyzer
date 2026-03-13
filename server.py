@@ -34,13 +34,14 @@ async def cqt(file: UploadFile = File(...)):
   hop_length = 1024
   fmin = librosa.note_to_hz("C1")
   max_bins = int(np.floor(np.log2(sr / 2 / fmin) * 24))
+  n_bins = np.min([216, max_bins])
   if y.ndim > 1: y = y.mean(axis=1)
   log("File loaded")
   cqt = librosa.cqt(
     y,
     sr=sr,
     hop_length=hop_length,
-    n_bins=np.min([216, max_bins]),
+    n_bins=n_bins,
     filter_scale=1,
     fmin=fmin,
     bins_per_octave=24,
@@ -51,7 +52,7 @@ async def cqt(file: UploadFile = File(...)):
   log("Magnitude calculation completed")
 
   rows, cols = magnitude.shape
-  header = struct.pack(">4i", rows, cols, sr, hop_length)
+  header = struct.pack(">5ifi", rows, cols, sr, hop_length, n_bins, fmin, 24)
   return Response(content=header + magnitude.tobytes(), media_type="application/octet-stream")
 
 @app.get("/status")

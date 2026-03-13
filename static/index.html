@@ -10,7 +10,11 @@
     <h1>CQT Analyzer</h1>
     <input type="file" id="file_input" accept="audio/*"><button type="button" id="analyze">解析する</button><br>
     <canvas id="canvas" width="800" height="600"></canvas><br>
-    <span>loudness: <b id="loudness">--</b>dB</span>
+    <canvas id="hovered_canvas" width="800" height="32"></canvas><br>
+    <audio id="audio" controls></audio><br>
+    <span>Total loudness: <b id="loudness">--</b>dB</span><br>
+    <span>Peak frequency: <b id="peak">--</b>Hz</span><br>
+    <span>Peak loudness: <b id="peak_loudness">--</b>dB</span>
     <script src="./script.js" type="module"></script>
   </body>
 </html>

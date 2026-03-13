@@ -4,14 +4,23 @@ import {load_response, to_decibel} from "./cqt_loader.js";
 const file_input = document.getElementById("file_input");
 const analyze_button = document.getElementById("analyze");
 const loudness_indicator = document.getElementById("loudness");
+const peak_indicator = document.getElementById("peak");
+const peak_loudness_indicator = document.getElementById("peak_loudness");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+const hovered_canvas = document.getElementById("hovered_canvas");
+const hovered_ctx = hovered_canvas.getContext("2d");
 
 analyze_button.addEventListener("click", () => {
   const file = file_input.files[0];
   if (!file){
     alert("Please select a file to analyze.");
+    return;
+  }
+  if (!file.type.startsWith("audio/")){
+    alert("Please select an audio file.");
     return;
   }
   const formData = new FormData();
@@ -33,7 +42,7 @@ analyze_button.addEventListener("click", () => {
     console.log("First 1KB of response:\n" + convert_typed(data.slice(0, 1024)));
     return load_response(data);
   })
-  .then(({rows, cols, sr, hop_length, data}) => ({rows, cols, sr, hop_length, data: to_decibel(data)}))
+  .then(({rows, cols, sr, hop_length, n_bins, fmin, bins_per_octave, data}) => ({rows, cols, sr, hop_length, n_bins, fmin, bins_per_octave, data: to_decibel(data)}))
   .then(data => start_visualize(data))
   .catch(error => {
     console.error("Error analyzing file:", error);
@@ -45,14 +54,23 @@ analyze_button.addEventListener("click", () => {
   });
 });
 
-function visualize(data, t, sr, hop_length){
+function find_peak(data, frame, cols){
+  let peak = -1;
+  for(let i = 0; i < data.rows; i++){
+    const value = data.data[i * cols + frame];
+    if (peak === -1 || value > data.data[peak * cols + frame]) peak = i;
+  }
+  return peak;
+}
+
+function visualize(data, t, sr, hop_length, focus_bar = []){
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for(let i = 0; i < data.rows; i++){
     const frame = Math.floor(t * sr / hop_length);
     const value = data.data[i * data.cols + frame];
-    ctx.fillStyle = "black";
+    ctx.fillStyle = focus_bar.includes(i) ? "dimgray" : "black";
     ctx.fillRect(i * (canvas.width / data.rows), canvas.height, canvas.width / data.rows, -Math.min(canvas.height * 0.75, canvas.height * 0.75 * (value + 120) / 120));
-    ctx.fillStyle = "red";
+    ctx.fillStyle = focus_bar.includes(i) ? "purple" : "red";
     ctx.fillRect(i * (canvas.width / data.rows), canvas.height * 0.25, canvas.width / data.rows, -Math.max(0, canvas.height * 0.75 * value / 120));
   }
 }
@@ -68,11 +86,15 @@ function calculate_loudness(data, frame){
   return Math.log10(sum) * 10;
 }
 
-let audio = document.createElement("audio");
-document.body.appendChild(audio);
+let audio = document.querySelector("audio");
+audio.loop = true;
 let animation_frame_id = null;
+// let hovered_bar = null;
+window.hovered_bar = null;
+let bars = null;
 
 async function start_visualize(data){
+  bars = data.rows;
   if (audio.src) URL.revokeObjectURL(audio.src);
   audio.src = URL.createObjectURL(file_input.files[0]);
   audio.play();
@@ -83,14 +105,62 @@ async function start_visualize(data){
   }, {once: true});
 }
 
+function render_hovered_bar(data, bar_index, hovering = true, peak = null){
+  hovered_ctx.clearRect(0, 0, hovered_canvas.width, hovered_canvas.height);
+  if (bar_index === null){
+    render_hovered_bar(data, peak, false, peak);
+    return;
+  }
+  const bar_width = hovered_canvas.width / bars;
+  const freq = data.fmin * 2 ** (bar_index / data.bins_per_octave);
+  hovered_ctx.fillStyle = "black";
+  hovered_ctx.font = "12px Arial";
+  hovered_ctx.textBaseline = "bottom";
+  hovered_ctx.textAlign = "center";
+  hovered_ctx.beginPath();
+  hovered_ctx.moveTo(bar_index * bar_width + bar_width * 0.5, 0);
+  hovered_ctx.lineTo(bar_index * bar_width + bar_width * 0.5 + 4, 5);
+  hovered_ctx.lineTo(bar_index * bar_width + bar_width * 0.5 - 4, 5);
+  hovered_ctx.closePath();
+  hovered_ctx.fill();
+  render_text(freq.toFixed(0) + "Hz", bar_index * bar_width, 20);
+  if (hovering) return;
+  render_text("PEAK", bar_index * bar_width, 32);
+}
+
+function render_text(text, x, y){
+  const text_width = hovered_ctx.measureText(text).width;
+  hovered_ctx.fillText(text, Math.min(hovered_canvas.width - text_width / 2, Math.max(text_width / 2, x)), y);
+}
+
 function frame(data){
   const t = audio.currentTime;
-  if (t < audio.duration){
-    const frame_n = Math.floor(t * data.sr / data.hop_length);
-    visualize(data, t, data.sr, data.hop_length);
-    loudness_indicator.textContent = calculate_loudness(data, frame_n).toFixed(2);
-    animation_frame_id = requestAnimationFrame(() => frame(data));
-  }else{
-    animation_frame_id = null;
-  }
+  const frame_n = Math.floor(t * data.sr / data.hop_length);
+  const peak = find_peak(data, frame_n, data.cols);
+  visualize(data, t, data.sr, data.hop_length, [hovered_bar ?? peak]);
+  render_hovered_bar(data, hovered_bar, true, peak);
+  loudness_indicator.textContent = calculate_loudness(data, frame_n).toFixed(2);
+  peak_indicator.textContent = (data.fmin * 2 ** (peak / data.bins_per_octave)).toFixed(0);
+  peak_loudness_indicator.textContent = data.data[peak * data.cols + frame_n].toFixed(2);
+  animation_frame_id = requestAnimationFrame(() => frame(data));
 }
+
+function get_hovered_bar(clientX){
+  if (!bars) return null;
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const bar_width = canvas.width / bars;
+  return Math.floor(x / bar_width);
+}
+
+canvas.addEventListener("mousemove", (event) => {
+  hovered_bar = get_hovered_bar(event.clientX);
+});
+
+canvas.addEventListener("mousemove", (event) => {
+  hovered_bar = get_hovered_bar(event.clientX);
+});
+
+canvas.addEventListener("mouseleave", () => {
+  hovered_bar = null;
+});

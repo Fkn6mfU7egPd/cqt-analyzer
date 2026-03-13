@@ -4,9 +4,12 @@ export function load_response(uint8){
   const cols = view.getInt32(4, false);
   const sr = view.getInt32(8, false);
   const hop_length = view.getInt32(12, false);
+  const n_bins = view.getInt32(16, false);
+  const fmin = view.getFloat32(20, false);
+  const bins_per_octave = view.getInt32(24, false);
   const data = new Float32Array(rows * cols);
-  for(let i = 0; i < rows * cols; i++) data[i] = view.getFloat32(16 + i * 4, false);
-  return {rows, cols, sr, hop_length, data};
+  for (let i = 0; i < rows * cols; i++) data[i] = view.getFloat32(28 + i * 4, false);
+  return {rows, cols, sr, hop_length, n_bins, fmin, bins_per_octave, data};
 }
 
 export function to_decibel(data){
