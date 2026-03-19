@@ -1,3 +1,64 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+b {
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+h3 {
+  margin: 2px 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 800px 200px;
+  grid-template-rows: auto auto 600px 32px auto;
+  grid-template-areas: "header ." "config ." "canvas info" "secondary ." "audio .";
+}
+
+.header {
+  grid-area: header;
+}
+
+.config {
+  grid-area: config;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.config form {
+  display: inline-flex;
+  gap: 0;
+}
+
+#canvas {
+  grid-area: canvas;
+}
+
+#hovered_canvas {
+  grid-area: secondary;
+}
+
+audio {
+  grid-area: audio;
+  width: stretch;
+}
+
+.info {
+  grid-area: info;
+  background: lightblue;
+  border-radius: 24px;
+  padding: 16px;
+  margin: 8px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: fit-content;
+}
+
+.info span {
+  display: block;
+}

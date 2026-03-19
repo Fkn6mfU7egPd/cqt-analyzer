@@ -8,13 +8,48 @@
   </head>
   <body>
     <h1>CQT Analyzer</h1>
-    <input type="file" id="file_input" accept="audio/*"><button type="button" id="analyze">解析する</button><br>
-    <canvas id="canvas" width="800" height="600"></canvas><br>
-    <canvas id="hovered_canvas" width="800" height="32"></canvas><br>
-    <audio id="audio" controls></audio><br>
-    <span>Total loudness: <b id="loudness">--</b>dB</span><br>
-    <span>Peak frequency: <b id="peak">--</b>Hz</span><br>
-    <span>Peak loudness: <b id="peak_loudness">--</b>dB</span>
+    <div class="layout">
+      <div class="header">
+        <input type="file" id="file_input" accept="audio/*">
+        <button type="button" id="analyze">解析する</button>
+      </div>
+      <div class="config">
+        <div>
+          <label>(高度) フレーム数:</label>
+          <form id="resolution_form">
+            <label><input type="radio" name="resolution" value="low">低</label>
+            <label><input type="radio" name="resolution" value="medium" checked>中</label>
+            <label><input type="radio" name="resolution" value="high">高</label>
+            <label><input type="radio" name="resolution" value="higher">最高</label>
+          </form>
+        </div>
+        <div>
+          <label>(高度) 周波数分解能:</label>
+          <form id="frequency_resolution_form">
+            <label><input type="radio" name="frequency_resolution" value="low">低</label>
+            <label><input type="radio" name="frequency_resolution" value="medium" checked>中</label>
+            <label><input type="radio" name="frequency_resolution" value="high">高</label>
+            <label><input type="radio" name="frequency_resolution" value="higher">最高</label>
+          </form>
+        </div>
+      </div>
+      <canvas id="canvas" width="800" height="600"></canvas>
+      <canvas id="hovered_canvas" width="800" height="32"></canvas>
+      <div class="info">
+        <h3>Information</h3>
+        <span>Total loudness: <b id="loudness">--</b>dB</span>
+        <span>Peak frequency: <b id="peak">--</b>Hz</span>
+        <span>Peak loudness: <b id="peak_loudness">--</b>dB</span>
+        <span>FPS: <b id="fps">--</b> | Frame #: <b id="frame_number">--</b></span>
+        <h3>Controls</h3>
+        <div class="control">
+          <button type="button" id="prev">&lt;</button>
+          <span style="display: inline-block;">Frame</span>
+          <button type="button" id="next">&gt;</button>
+        </div>
+      </div>
+      <audio id="audio" controls></audio>
+    </div>
     <script src="./script.js" type="module"></script>
   </body>
 </html>

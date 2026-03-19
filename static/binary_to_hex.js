@@ -11,10 +11,8 @@ function decode(data){
 function format(arr){
   let result = [];
   for (let i = 0; i < arr.length; i++){
-    let temp = arr[i];
-
     const isLast = i === arr.length - 1;
-
+    let temp = arr[i];
     if (!isLast){
       if (i % 16 === 15){
         temp += "\n";
@@ -30,8 +28,7 @@ function format(arr){
 }
 
 function deformat(str){
-  const cleaned = str.replace(/\s+/g, " ").trim();
-  return cleaned.split(" ");
+  return str.trim().split(/\s+/);
 }
 
 export function convert_string(str){
@@ -47,6 +44,7 @@ export function convert_typed(typed){
 export function deconvert(str){
   const deformated = deformat(str);
   if (deformated.length === 0) return "";
-  const uint8 = Uint8Array.from(deformated.map(hex => parseInt(hex, 16)));
+  const uint8 = new Uint8Array(deformated.length);
+  for (let i = 0; i < deformated.length; i++) uint8[i] = Number.parseInt(deformated[i], 16);
   return decode(uint8);
 }
